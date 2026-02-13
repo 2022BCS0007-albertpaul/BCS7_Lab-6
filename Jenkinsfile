@@ -32,11 +32,7 @@ pipeline {
             }
         }
 
-
         stage('Build Docker Image') {
-            when {
-                expression { env.IS_BETTER == '1' }
-            }
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-creds',
@@ -53,9 +49,6 @@ pipeline {
         }
 
         stage('Push Docker Image') {
-            when {
-                expression { env.IS_BETTER == '1' }
-            }
             steps {
                 sh '''
                 docker push $DOCKER_IMAGE:${BUILD_NUMBER}
