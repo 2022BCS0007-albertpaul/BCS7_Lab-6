@@ -1,48 +1,94 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_IMAGE = "albertpaulbcs7/lab6-model"
+    }
+
     stages {
-        stage('Print Student Details') {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Setup Python Virtual Environment') {
             steps {
                 sh '''
-                echo "Name: Albert Paul Sebastian"
-                echo "Roll No: 2022BCS0007"
+                python3 -m venv .venv
+                . .venv/bin/activate
+                pip install --break-system-packages -r requirements.txt
                 '''
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Train Model') {
             steps {
                 sh '''
-                python3 -m pip install scikit-learn --break-system-packages
-
+                . .venv/bin/activate
+                python scripts/train.py
                 '''
             }
         }
 
-        stage('Train ML Model') {
+        stage('Read Accuracy') {
+            steps {
+                script {
+                    def acc = sh(
+                        script: "jq -r .accuracy app/artifacts/metrics.json",
+                        returnStdout: true
+                    ).trim()
+
+                    env.CURRENT_ACCURACY = acc
+                    echo "Current Accuracy: ${acc}"
+                }
+            }
+        }
+
+        stage('Compare Accuracy') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'BEST_ACCURACY', variable: 'BEST')]) {
+                        def result = sh(
+                            script: "echo \"${env.CURRENT_ACCURACY} > ${BEST}\" | bc",
+                            returnStdout: true
+                        ).trim()
+
+                        env.IS_BETTER = result
+                        echo "Is Better: ${result}"
+                    }
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            when {
+                expression { env.IS_BETTER == '1' }
+            }
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh '''
+                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                    docker build -t $DOCKER_IMAGE:${BUILD_NUMBER} .
+                    docker tag $DOCKER_IMAGE:${BUILD_NUMBER} $DOCKER_IMAGE:latest
+                    '''
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            when {
+                expression { env.IS_BETTER == '1' }
+            }
             steps {
                 sh '''
-                python3 - << EOF
-from sklearn.datasets import load_iris
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
-
-data = load_iris()
-
-X_train, X_test, y_train, y_test = train_test_split(
-    data.data, data.target, test_size=0.2, random_state=42
-)
-
-model = RandomForestClassifier()
-model.fit(X_train, y_train)
-
-pred = model.predict(X_test)
-accuracy = accuracy_score(y_test, pred)
-
-print("Model Accuracy:", accuracy)
-EOF
+                docker push $DOCKER_IMAGE:${BUILD_NUMBER}
+                docker push $DOCKER_IMAGE:latest
                 '''
             }
         }
