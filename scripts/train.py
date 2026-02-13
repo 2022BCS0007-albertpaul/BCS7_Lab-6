@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error, f1_score
+from sklearn.metrics import mean_squared_error, r2_score
 
 # Ensure artifacts directory exists
 os.makedirs("app/artifacts", exist_ok=True)
@@ -37,12 +37,9 @@ model.fit(X_train_scaled, y_train)
 # Predict
 y_pred = model.predict(X_test_scaled)
 
-# Round predictions for F1 score
-y_pred_rounded = np.rint(y_pred).astype(int)
-
 # Metrics
 mse = mean_squared_error(y_test, y_pred)
-f1 = f1_score(y_test, y_pred_rounded, average='weighted')
+r2 = r2_score(y_test, y_pred)
 
 # Save model
 joblib.dump(model, "app/artifacts/model.pkl")
@@ -50,7 +47,7 @@ joblib.dump(model, "app/artifacts/model.pkl")
 # Save metrics
 metrics = {
     "mean_squared_error": mse,
-    "f1_score": f1
+    "r2_score": r2
 }
 
 with open("app/artifacts/metrics.json", "w") as f:
@@ -60,4 +57,4 @@ with open("app/artifacts/metrics.json", "w") as f:
 print("Model Evaluation Metrics")
 print("------------------------")
 print(f"Mean Squared Error (MSE): {mse:.4f}")
-print(f"F1 Score: {f1:.4f}")
+print(f"R2 Score: {r2:.4f}")

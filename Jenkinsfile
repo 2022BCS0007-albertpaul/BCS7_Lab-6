@@ -32,35 +32,6 @@ pipeline {
             }
         }
 
-        stage('Read Accuracy') {
-            steps {
-                script {
-                    def acc = sh(
-                        script: "jq -r .accuracy app/artifacts/metrics.json",
-                        returnStdout: true
-                    ).trim()
-
-                    env.CURRENT_ACCURACY = acc
-                    echo "Current Accuracy: ${acc}"
-                }
-            }
-        }
-
-        stage('Compare Accuracy') {
-            steps {
-                script {
-                    withCredentials([string(credentialsId: 'BEST_ACCURACY', variable: 'BEST')]) {
-                        def result = sh(
-                            script: "echo \"${env.CURRENT_ACCURACY} > ${BEST}\" | bc",
-                            returnStdout: true
-                        ).trim()
-
-                        env.IS_BETTER = result
-                        echo "Is Better: ${result}"
-                    }
-                }
-            }
-        }
 
         stage('Build Docker Image') {
             when {
