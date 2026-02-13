@@ -14,8 +14,9 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 sh '''
-                python3 -m pip install --upgrade pip
-                python3 -m pip install scikit-learn
+                python3 -m pip install --upgrade pip --break-system-packages
+                python3 -m pip install scikit-learn --break-system-packages
+
                 '''
             }
         }
