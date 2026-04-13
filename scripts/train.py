@@ -43,6 +43,7 @@ r2 = r2_score(y_test, y_pred)
 
 # Save model
 joblib.dump(model, "app/artifacts/model.pkl")
+joblib.dump(scaler, "app/artifacts/scaler.pkl")
 
 # Save metrics
 metrics = {

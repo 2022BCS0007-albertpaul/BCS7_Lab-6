@@ -1,24 +1,13 @@
 pipeline {
     agent any
 
-    environment {
-        DOCKER_IMAGE = "albertpaulbcs7/lab6-model"
-    }
-
     stages {
 
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Setup Python Virtual Environment') {
+        stage('Setup - Install Dependencies') {
             steps {
                 sh '''
-                python3 -m venv .venv
-                . .venv/bin/activate
-                pip install --break-system-packages -r requirements.txt
+                    python3 -m pip install --upgrade pip
+                    pip install -r requirements.txt
                 '''
             }
         }
@@ -26,34 +15,25 @@ pipeline {
         stage('Train Model') {
             steps {
                 sh '''
-                . .venv/bin/activate
-                python scripts/train.py
+                    python3 train.py
                 '''
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Identity') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
-                    sh '''
-                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                    docker build -t $DOCKER_IMAGE:${BUILD_NUMBER} .
-                    docker tag $DOCKER_IMAGE:${BUILD_NUMBER} $DOCKER_IMAGE:latest
-                    '''
-                }
+                echo 'Student: Albert Paul Sebastian | Roll No: 2022BCS0007'
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Archive Artifacts') {
             steps {
                 sh '''
-                docker push $DOCKER_IMAGE:${BUILD_NUMBER}
-                docker push $DOCKER_IMAGE:latest
+                    echo "Archiving model and metrics..."
+                    ls -lah
                 '''
+
+                archiveArtifacts artifacts: 'model.pkl, metrics.json', fingerprint: true
             }
         }
     }
