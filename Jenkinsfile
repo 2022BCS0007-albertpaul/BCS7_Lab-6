@@ -34,10 +34,17 @@ pipeline {
                 sh '''
                     . venv/bin/activate
                     mkdir -p outputs
-                    cp -f model.pkl outputs/ 2>/dev/null || true
-                    cp -f metrics.json outputs/ 2>/dev/null || true
-                    echo "Artifacts prepared"
+
+                    echo "Copying artifacts from app/artifacts..."
+
+                    cp -f app/artifacts/model.pkl outputs/ 2>/dev/null || true
+                    cp -f app/artifacts/metrics.json outputs/ 2>/dev/null || true
+
+                    echo "Final output directory:"
+                    ls -R outputs || true
                 '''
+
+                archiveArtifacts artifacts: 'outputs/**', fingerprint: true
             }
         }
     }
