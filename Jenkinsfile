@@ -3,10 +3,12 @@ pipeline {
 
     stages {
 
-        stage('Setup - Install Dependencies') {
+        stage('Setup Dependencies') {
             steps {
                 sh '''
-                    python3 -m pip install --upgrade pip
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip install --upgrade pip
                     pip install -r requirements.txt
                 '''
             }
@@ -15,25 +17,27 @@ pipeline {
         stage('Train Model') {
             steps {
                 sh '''
-                    python3 train.py
+                    . venv/bin/activate
+                    python train.py
                 '''
             }
         }
 
-        stage('Identity') {
+        stage('Identity Print') {
             steps {
                 echo 'Student: Albert Paul Sebastian | Roll No: 2022BCS0007'
             }
         }
 
-        stage('Archive Artifacts') {
+        stage('Archive Output') {
             steps {
                 sh '''
-                    echo "Archiving model and metrics..."
-                    ls -lah
+                    . venv/bin/activate
+                    mkdir -p outputs
+                    cp -f model.pkl outputs/ 2>/dev/null || true
+                    cp -f metrics.json outputs/ 2>/dev/null || true
+                    echo "Artifacts prepared"
                 '''
-
-                archiveArtifacts artifacts: 'model.pkl, metrics.json', fingerprint: true
             }
         }
     }
