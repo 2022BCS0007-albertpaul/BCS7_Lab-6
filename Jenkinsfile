@@ -18,7 +18,7 @@ pipeline {
             steps {
                 sh '''
                     . venv/bin/activate
-                    python train.py
+                    python scripts/train.py
                 '''
             }
         }
